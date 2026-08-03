@@ -1,0 +1,74 @@
+{
+  "name": "StudentProfile",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "title": "Full Name"
+    },
+    "age": {
+      "type": "number",
+      "title": "Age"
+    },
+    "profession": {
+      "type": "string",
+      "title": "Profession"
+    },
+    "location": {
+      "type": "string",
+      "title": "Location"
+    },
+    "family_composition": {
+      "type": "string",
+      "title": "Family Composition"
+    },
+    "motivation": {
+      "type": "string",
+      "title": "Motivation"
+    },
+    "learning_goals": {
+      "type": "string",
+      "title": "Learning Goals"
+    },
+    "english_level": {
+      "type": "string",
+      "enum": [
+        "A1",
+        "A2",
+        "B1",
+        "B2",
+        "C1"
+      ],
+      "default": "A1",
+      "title": "English Level (CEFR)"
+    },
+    "levels_unlocked": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Unlocked Levels",
+      "default": [
+        "A1"
+      ]
+    },
+    "preferred_accent": {
+      "type": "string",
+      "enum": [
+        "us",
+        "uk",
+        "aus"
+      ],
+      "default": "us",
+      "title": "Preferred Audio Accent"
+    },
+    "onboarding_completed": {
+      "type": "boolean",
+      "default": false,
+      "title": "Onboarding Completed"
+    }
+  },
+  "required": [
+    "full_name"
+  ]
+}

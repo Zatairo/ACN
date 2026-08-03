@@ -1,0 +1,60 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "username": "ACN Institute",
+  "instructions": ["AGENTS.md", "ops/ESTADO DEL PROYECTO.md"],
+  "agent": {
+    "director": {
+      "description": "Coordina todo el instituto 24/7: revisa estado del proyecto, asigna tareas a los demás agentes, genera reportes diarios",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow" }
+    },
+    "ventas": {
+      "description": "Gestiona el funnel de ventas: atrae leads, califica prospectos, da seguimiento, programa clases diagnóstico",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow" }
+    },
+    "soporte": {
+      "description": "Atención al estudiante 24/7: responde dudas, agenda clases, confirma pagos, resuelve incidencias",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow", "webfetch": "allow" }
+    },
+    "finanzas": {
+      "description": "Contabilidad y finanzas: ingresos/gastos, recibos, flujo de caja, proyecciones, pagos a docentes",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow" }
+    },
+    "webdev": {
+      "description": "Desarrollador web del proyecto ACN: mantiene la web en web/, corrige bugs, implementa features",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow" }
+    },
+    "contenido": {
+      "description": "Creador de contenido para redes sociales: Instagram, TikTok, copywriting, calendario editorial",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow", "webfetch": "allow" }
+    },
+    "didactica": {
+      "description": "Creador de material didáctico: conversaciones guiadas, audios, ejercicios, lecciones personalizadas",
+      "mode": "subagent",
+      "permission": { "read": "allow", "edit": "allow", "bash": "allow", "glob": "allow", "grep": "allow" }
+    }
+  },
+  "command": {
+    "reporte": {
+      "description": "Genera un reporte del estado actual del proyecto. Uso: /reporte",
+      "template": "Lee el archivo ops/ESTADO DEL PROYECTO.md. Luego recorre todos los estudiantes, tareas activas, indicadores y genera un resumen ejecutivo del estado actual del proyecto. Incluye: (1) cuántos estudiantes activos, (2) ingresos estimados, (3) tareas pendientes, (4) bloqueos, (5) qué hizo cada agente hoy. Finalmente actualiza la fecha de última actualización en el estado del proyecto."
+    },
+    "estado": {
+      "description": "Muestra el estado actual del proyecto resumido",
+      "template": "Lee ops/ESTADO DEL PROYECTO.md y extrae: estudiantes activos, ingresos mensuales, tareas activas, bloqueos. Preséntalo en 5 líneas."
+    },
+    "plan-dia": {
+      "description": "Crea el plan del día asignando tareas a los agentes basado en el estado del proyecto",
+      "template": "Lee ops/ESTADO DEL PROYECTO.md y docs/ESTRATEGIA COMERCIAL - ACN INSTITUTE ONLINE.md. Identifica las 3 tareas más importantes para hoy y asígnale cada una al agente correspondiente (director, ventas, soporte, finanzas, webdev, contenido, didactica). Explica qué debe hacer cada agente."
+    },
+    "nuevo-lead": {
+      "description": "Registra un nuevo lead en el proyecto. Uso: /nuevo-lead nombre, celular, propósito, nivel (opcional)",
+      "template": "Registra un nuevo lead en ops/LEADS.md. Si no existe el archivo, créalo con formato tabla. El lead recibido es: $ARGUMENTS. Luego actualiza ops/ESTADO DEL PROYECTO.md incrementando el contador de leads."
+    }
+  }
+}
