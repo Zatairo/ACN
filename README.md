@@ -40,7 +40,7 @@ ACN/
 │
 ├── web/                   # Aplicación web (React + Vite + shadcn/ui)
 │
-├── Students 2025/         # Material por estudiante
+├── Students 2025/         # Material de ejemplo (base de datos histórica para referencia)
 │   ├── Andres Carrillo/        # B1 — Energía solar / Tecnología
 │   ├── Jenifer English for life/  # B1 — Bienes raíces
 │   ├── Luciana Castañeda/      # A1 — Kids
@@ -89,7 +89,9 @@ ACN/
 
 ---
 
-## Estudiantes activos (agosto 2026)
+## Estudiantes de referencia (base histórica)
+
+> Los siguientes estudiantes pertenecen a una base de datos antigua. Se incluyen únicamente como **ejemplo y modelo de construcción** para el desarrollo de materiales y perfiles de futuros estudiantes. No son estudiantes activos.
 
 | Estudiante | Nivel | Enfoque | Paquete | Desde |
 |-----------|-------|---------|---------|-------|
@@ -99,8 +101,6 @@ ACN/
 | Luciana Castañeda (Kids) | A1 | Refuerzo escolar | Básico | 2025 |
 | Nico & Juanita | A2 | Conversación y confianza | Básico | 2025 |
 | Gabriela (Yoga) | B2 | Speaking fluido | Semi Intensivo | 2025 |
-
-**6 estudiantes activos, ~15 clases/semana, ~$2.500.000 COP/mes estimados.**
 
 ---
 
@@ -206,9 +206,9 @@ El instituto opera con **7 agentes opencode** que trabajan 24/7 coordinados por 
 
 | Indicador | Valor |
 |-----------|-------|
-| Estudiantes activos | 6 |
-| Ingresos mensuales | ~$2.500.000 COP |
-| Clases/semana | ~15 |
+| Estudiantes activos | 0 (reinicio de base de datos) |
+| Ingresos mensuales | $0 COP |
+| Clases/semana | 0 |
 | Web publicada | No (compila OK, 12 rutas) |
 | Leads en WhatsApp | 0 (sin campaña activa) |
 | Redes sociales | No activas |
@@ -224,7 +224,9 @@ El instituto opera con **7 agentes opencode** que trabajan 24/7 coordinados por 
 
 ---
 
-## Metas a 12 meses
+## Metas a 12 meses (proyección desde cero)
+
+> Metas comerciales proyectadas para el relanzamiento, partiendo de 0 estudiantes activos.
 
 | Indicador | Mes 3 | Mes 6 | Mes 12 |
 |-----------|-------|-------|--------|

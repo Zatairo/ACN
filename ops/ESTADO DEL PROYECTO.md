@@ -15,7 +15,10 @@
 - **Web**: Next.js 16, App Router, TS, Tailwind — en `web/`
 - **Horarios**: L–S, franjas 7am, 12pm, 5pm (COL)
 
-## 👥 Estudiantes activos
+## 👥 Estudiantes de referencia (base histórica)
+
+> Los siguientes estudiantes pertenecen a una base de datos antigua. Se incluyen únicamente como **ejemplo y modelo de construcción** para el desarrollo de materiales y perfiles de futuros estudiantes. No son estudiantes activos.
+
 | Estudiante | Nivel | Enfoque | Paquete | Desde |
 |-----------|-------|---------|---------|-------|
 | Andrés Carrillo | B1 | Energía solar / tecnología | Semi Intensivo | 2025 |
@@ -26,10 +29,10 @@
 | Gabriela (Yoga) | B2 | Speaking fluido | Semi Intensivo | 2025 |
 
 ## 📊 Indicadores actuales
-- **Total estudiantes**: 6
+- **Total estudiantes**: 0 (reinicio de base de datos)
 - **Leads en WhatsApp**: 0 (sin campaña activa)
-- **Ingresos mensuales estimados**: ~$2.500.000 COP
-- **Clases/semana**: ~15
+- **Ingresos mensuales estimados**: $0 COP
+- **Clases/semana**: 0
 - **Web publicada**: No (compila OK en local, 12 rutas, Next.js 16.2.12)
 - **Redes sociales**: No activas
 

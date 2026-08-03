@@ -16,7 +16,7 @@ All archive content is binary Office formats (`.docx`, `.pdf`). Standard tools f
 ## Layout
 
 - Root: business and shared documents — class packages (`Paquete de Clases de Speaking – Conversación Guiada.docx`), service lists (`Services- Andres.docx`), platform notes (`PLATFORMS WEBS_/PLATFORMS_.docx`), business plan (`Plan de Negocio - ACN Institute.docx`).
-- `Students 2025/`: one folder per student, each with monthly subfolders (`First month/`, `Second month/`, ...) plus a per-student speaking package.
+- `Students 2025/`: one folder per student (historical reference data — these are not active students, only examples for future material development), each with monthly subfolders (`First month/`, `Second month/`, ...) plus a per-student speaking package.
 - `ACN, Mentor Mateo/`, `Andrea_/`: individual mentor/student materials.
 - Spanish is the working language for internal notes; English is the subject matter. Preserve language of existing documents.
 
