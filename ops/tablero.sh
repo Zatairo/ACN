@@ -9,12 +9,16 @@ set -euo pipefail
 
 SCOPE="${1:-all}"
 
-TOKEN="$(git -C "$(dirname "$(dirname "$(realpath "$0")")")" remote get-url origin | sed -E 's#https://([^:@/]+):([^@/]+)@#\2#')"
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "origin" ]; then
-  TOKEN="${GITHUB_TOKEN:-}"
+TOKEN="${GITHUB_TOKEN:-}"
+if [ -z "$TOKEN" ]; then
+  URL="$(git -C "$(dirname "$(dirname "$(realpath "$0")")")" remote get-url origin)"
+  TOKEN="$(printf '%s' "$URL" | sed -E 's#https://([^:]+):([^@]+)@.*#\2#')"
 fi
 if [ -z "$TOKEN" ]; then
-  echo "No se pudo extraer el token (usa GITHUB_TOKEN o que el remote tenga credenciales)." >&2
+  TOKEN="$(grep -E '^GITHUB_TOKEN=' "$HOME/.hermes/.env" 2>/dev/null | tail -1 | cut -d= -f2-)"
+fi
+if [ -z "$TOKEN" ]; then
+  echo "No se pudo extraer el token (usa GITHUB_TOKEN, el remote con credenciales, o GITHUB_TOKEN en ~/.hermes/.env)." >&2
   exit 1
 fi
 
