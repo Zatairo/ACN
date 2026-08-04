@@ -5,10 +5,22 @@ import { validate } from '../lib/validate'
 import { AppError } from '../lib/errors'
 import { requireAuth, requireRole } from '../middleware/auth'
 import { audit } from '../lib/audit'
-import { wompiService } from "../lib/wompi";
+import { wompiService } from '../lib/wompi'
 
 const router = Router()
 router.use(requireAuth)
+
+// Middleware to parse raw body for webhook verification
+const rawBodyMiddleware = (req: any, res: any, next: any) => {
+  if (req.originalUrl.includes('/wompi/webhook')) {
+    express.raw({ type: 'application/json' })(req, res, next)
+  } else {
+    next()
+  }
+}
+
+// Apply raw body middleware only for webhook route
+// We'll use a specific route definition for webhook with raw body parser
 
 const idParam = z.object({ id: z.coerce.number().int().positive() })
 
@@ -128,135 +140,45 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res) => {
   res.json({ data: payment })
 })
 
-// POST /api/payments/wompi/webhook — Fase 3: recibe webhook de Wompi y actualiza el pago
-// Por ahora, solo registramos el webhook y retornamos éxito.
-// La implementación actualizada se hará en una futura iteración.
-router.post('/wompi/webhook', async (req, res) => {
-  // En una implementación real, verificar la firma del webhook usando WOMPI_SIGNATURE_KEY
-  // y actualizar el pago correspondiente.
-  console.log('Webhook de Wompi recibido:', req.body)
-  res.json({ received: true })
-})
-
-export default router
 // POST /api/payments/wompi/create-transaction — Crea una transacción en Wompi y devuelve el ID
 router.post('/wompi/create-transaction', requireRole('STUDENT'), async (req, res) => {
-  const schema = z.object({
-    concepto: z.string().min(3, 'Concepto requerido'),
-    valorCOP: z.coerce.number().int().min(1),
-    metodo: z.enum(['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE']), // Note: we'll correct the enum below
-  });
-
-  // Correct the enum to match the actual methods
-  const methodSchema = z.enum(['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE']);
-  const parsed = metodo.safeParse(req.body.metodo);
-  if (!parsed.success) {
-    throw new AppError(400, 'METODO_INVALIDO', 'Método de pago Wompi no válido');
+  const metodoSchema = z.enum(['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE'])
+  const metodoParsed = metodoSchema.safeParse(req.body.metodo)
+  if (!metodoParsed.success) {
+    throw new AppError(400, 'METODO_INVALIDO', 'Método de pago Wompi no válido')
   }
 
-  const data = {
-    concepto: req.body.concepto,
-    valorCOP: req.body.valorCOP,
-    metodo: parsed.data,
-  };
-
-  const { concepto, valorCOP, metodo } = data;
-
-  // Obtener el email del usuario autenticado
-  const student = await prisma.user.findUnique({ where: { id: req.user!.id } });
-  if (!student) {
-    throw new AppError(404, 'NOT_FOUND', 'Estudiante no encontrado');
-  }
-  const email = student.email;
-  if (!email) {
-    throw new AppError(400, 'EMAIL_REQUIRED', 'El estudiante no tiene email asociado');
-  }
-
-  // Mapear nuestro método a los tipos de pago de Wompi
-  let wompiPaymentMethodType: 'CARD' | 'NEQUI' | 'PSE';
-  switch (metodo) {
-    case 'WOMPI_CARD':
-      wompiPaymentMethodType = 'CARD';
-      break;
-    case 'WOMPI_NEQUI':
-      wompiPaymentMethodType = 'NEQUI';
-      break;
-    case 'WOMPI_PSE':
-      wompiPaymentMethodType = 'PSE';
-      break;
-    default:
-      throw new AppError(400, 'METODO_NO_SOPORTADO', `Método ${metodo} no soportado para Wompi`);
-  }
-
-  // Generar una referencia única (usamos el concepto y un timestamp)
-  const referencia = `${concepto}-${Date.now()}`;
-
-  try {
-    const wompiResponse = await wompiService.createTransaction({
-      amountInCents: valorCOP * 100, // Wompi expects cents
-      currency: 'COP',
-      reference: referencia,
-      customerEmail: email,
-      paymentMethodType: wompiPaymentMethodType,
-    });
-
-    // Devolver el ID de la transacción de Wompi y cualquier otro dato necesario
-    res.json({
-      data: {
-        transaccionIdWompi: wompiResponse.id,
-        // Si necesitamos redirigir al usuario a una URL de Wompi, la incluimos
-        // Para tarjetas, podemos usar el widget y no necesitamos redirect
-        // Para PSE y Nequi, podemos proporcionar un URL de redirección
-        redirectUrl: wompiResponse.redirect_url,
-      },
-    });
-  } catch (error) {
-    console.error('Error al crear transacción en Wompi:', error);
-    if (error instanceof Error) {
-      throw new AppError(500, 'WOMPI_ERROR', error.message);
-    }
-    throw new AppError(500, 'WOMPI_ERROR', 'Error al comunicarse con Wompi');
-  }
-
-// POST /api/payments/wompi/create-transaction — Fase 3: crea transacción Wompi y devuelve el transaccionIdWompi
-router.post('/wompi/create-transaction', requireRole('STUDENT', 'ADMIN'), async (req, res) => {
-  // Validamos el método de pago (solo Wompi)
-  const metodo = req.body.metodo;
-  if (!['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE'].includes(metodo)) {
-    throw new AppError(400, 'METODO_INVALIDO', 'Método de pago Wompi no válido');
-  }
-
-  const { concepto, valorCOP } = req.body;
+  const { concepto, valorCOP } = req.body
   if (!concepto || !valorCOP) {
-    throw new AppError(400, 'CAMPO_FALTANTE', 'Concepto y valor son requeridos');
+    throw new AppError(400, 'CAMPO_FALTANTE', 'Concepto y valor son requeridos')
   }
 
   // Obtener el email del usuario autenticado
-  const student = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  const student = await prisma.user.findUnique({ where: { id: req.user!.id } })
   if (!student) {
-    throw new AppError(404, 'NOT_FOUND', 'Estudiante no encontrado');
+    throw new AppError(404, 'NOT_FOUND', 'Estudiante no encontrado')
   }
-  const email = student.email;
+  const email = student.email
   if (!email) {
-    throw new AppError(400, 'EMAIL_REQUIRED', 'El estudiante no tiene email asociado');
+    throw new AppError(400, 'EMAIL_REQUIRED', 'El estudiante no tiene email asociado')
   }
 
   // Mapear nuestro método a los tipos de pago de Wompi
-  let wompiPaymentMethodType: 'CARD' | 'NEQUI' | 'PSE';
-  switch (metodo) {
+  let wompiPaymentMethodType: 'CARD' | 'NEQUI' | 'PSE'
+  switch (metodoParsed.data) {
     case 'WOMPI_CARD':
-      wompiPaymentMethodType = 'CARD';
-      break;
+      wompiPaymentMethodType = 'CARD'
+      break
     case 'WOMPI_NEQUI':
-      wompiPaymentMethodType = 'NEQUI';
-      break;
+      wompiPaymentMethodType = 'NEQUI'
+      break
     case 'WOMPI_PSE':
-      wompiPaymentMethodType = 'PSE';
-      break;
+      wompiPaymentMethodType = 'PSE'
+      break
   }
 
   // Generar una referencia única
-  const referencia = `${concepto}-${Date.now()}`;
+  const referencia = `${concepto}-${Date.now()}`
 
   try {
     const wompiResponse = await wompiService.createTransaction({
@@ -265,7 +187,7 @@ router.post('/wompi/create-transaction', requireRole('STUDENT', 'ADMIN'), async 
       reference: referencia,
       customerEmail: email,
       paymentMethodType: wompiPaymentMethodType,
-    });
+    })
 
     // Devolver el ID de la transacción de Wompi y cualquier otro dato necesario
     res.json({
@@ -273,14 +195,111 @@ router.post('/wompi/create-transaction', requireRole('STUDENT', 'ADMIN'), async 
         transaccionIdWompi: wompiResponse.id,
         redirectUrl: wompiResponse.redirect_url,
       },
-    });
+    })
   } catch (error) {
-    console.error('Error al crear transacción en Wompi:', error);
+    console.error('Error al crear transacción en Wompi:', error)
     if (error instanceof Error) {
-      throw new AppError(500, 'WOMPI_ERROR', error.message);
+      throw new AppError(500, 'WOMPI_ERROR', error.message)
     }
-    throw new AppError(500, 'WOMPI_ERROR', 'Error al comunicarse con Wompi');
+    throw new AppError(500, 'WOMPI_ERROR', 'Error al comunicarse con Wompi')
   }
-});
+})
+
+// POST /api/payments/wompi/webhook — Fase 3: recibe webhook de Wompi y actualiza el pago
+// We use express.raw() middleware to get the raw body for signature verification
+router.post(
+  '/wompi/webhook',
+  express.raw({ type: 'application/json' }),
+  async (req, res) => {
+    const signature = req.headers['x-signature'] as string | undefined
+    const timestamp = req.headers['x-timestamp'] as string | undefined
+    const rawBody = req.body.toString() // Buffer to string
+
+    // Verify signature
+    const isValid = wompiService.verifySignature(signature ?? '', timestamp ?? '', rawBody)
+    if (!isValid) {
+      console.warn('Invalid Wompi webhook signature')
+      return res.status(401).json({ error: 'Invalid signature' })
+    }
+
+    // Parse the JSON body
+    let webhookBody
+    try {
+      webhookBody = JSON.parse(rawBody)
+    } catch (e) {
+      console.error('Invalid JSON in Wompi webhook body')
+      return res.status(400).json({ error: 'Invalid JSON' })
+    }
+
+    // Log the webhook for debugging (in production, be careful with PII)
+    console.log('Webhook de Wompi recibido:', JSON.stringify(webhookBody, null, 2))
+
+    // Extract relevant data from Wompi webhook
+    // According to Wompi documentation, the webhook contains a "data" object with transaction details
+    const data = webhookBody?.data
+    if (!data) {
+      console.warn('Webhook body does not contain data')
+      return res.status(400).json({ error: 'Invalid webhook payload' })
+    }
+
+    const transactionId = data.id // Wompi transaction ID
+    const status = data.status // e.g., APPROVED, DECLINED, PENDING, etc.
+
+    // Find the payment by transaccionIdWompi
+    const payment = await prisma.payment.findFirst({
+      where: { transaccionIdWompi: transactionId },
+    })
+
+    if (!payment) {
+      console.warn(`No payment found for Wompi transaction ID: ${transactionId}`)
+      // We still return 200 to Wompi to avoid retries, but log the issue
+      return res.status(200).json({ received: true, matched: false })
+    }
+
+    // Map Wompi status to our PaymentStatus
+    // Wompi statuses: PENDING, APPROVED, DECLINED, ERROR, etc.
+    // We need to map to our enum: PENDIENTE, APROBADO, RECHAZADO, REEMBOLSADO, VENCIDO
+    let newStatus: PaymentStatus = payment.estado // default to current
+    switch (status) {
+      case 'PENDING':
+        newStatus = 'PENDIENTE'
+        break
+      case 'APPROVED':
+        newStatus = 'APROBADO'
+        break
+      case 'DECLINED':
+        newStatus = 'RECHAZADO'
+        break
+      // For other statuses like EXPIRED, we might map to VENCIDO or RECHAZADO
+      case 'EXPIRED':
+        newStatus = 'VENCIDO'
+        break
+      default:
+        // If unknown, keep current status but log
+        console.warn(`Unknown Wompi status: ${status}`)
+        break
+    }
+
+    // Update the payment
+    const updatedPayment = await prisma.payment.update({
+      where: { id: payment.id },
+      data: {
+        estado: newStatus,
+        // Optionally, we could update other fields like referencia if needed
+        // referencia: data.reference, // but we already have transaccionIdWompi
+      },
+    })
+
+    // Audit log
+    await audit(
+      req.user?.id ?? null, // webhook might not have a user, but we can set null
+      `PAYMENT_WOMPI_WEBHOOK_${newStatus}`,
+      'Payment',
+      payment.id,
+    )
+
+    res.json({ received: true, matched: true, payment: updatedPayment })
+  }
+)
 
 export default router
