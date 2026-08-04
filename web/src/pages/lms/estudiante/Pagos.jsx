@@ -80,12 +80,59 @@ export default function EstudiantePagos() {
     }
   };
 
-  const registrarPago = async () => {
+const registrarPago = async () => {
     // For Wompi, we don't require comprobanteUrl
     if (!concepto.trim() || !Number(valor) || (!isWompi && !comprobanteUrl)) {
       toast({ title: t('lms.error'), description: t('lms.payment.requiredFields'), variant: 'destructive' });
       return;
     }
+
+    // If the method is Wompi, we first create the transaction with Wompi
+    if (isWompi) {
+      setEnviando(true);
+      try {
+        // Llamar al endpoint para crear la transacción en Wompi
+        const wompiResponse = await fetch(`/api/payments/wompi/create-transaction`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            concepto: concepto.trim(),
+            valorCOP: Number(valor),
+            metodo,
+          }),
+        });
+
+        if (!wompiResponse.ok) {
+          throw new Error(`Error al crear la transacción en Wompi: ${await wompiResponse.text()}`);
+        }
+
+        const { id: transaccionIdWompi, redirect_url } = await wompiResponse.json();
+
+        // Ahora crear el pago en nuestra base de datos
+        await paymentsApi.create({
+          enrollmentId: matricula?.id ?? null,
+          concepto: concepto.trim(),
+          valorCOP: Number(valor),
+          metodo,
+          referencia: referencia.trim() || null,
+          transaccionIdWompi, // Guardamos el ID de la transacción de Wompi
+          comprobanteUrl: null, // Para Wompi, no enviamos comprobante
+        });
+
+        // Redirigir al usuario a la URL de pago de Wompi
+        window.location.href = redirect_url;
+        return; // Salimos porque la redirección hará que la página se vaya
+      } catch (err) {
+        toast({ title: t('lms.error'), description: err.message, variant: 'destructive' });
+      } finally {
+        setEnviando(false);
+      }
+      return; // Salimos para no continuar con el flujo normal
+    }
+
+    // Para métodos no Wompi, usamos el flujo original
     setEnviando(true);
     try {
       await paymentsApi.create({
@@ -94,7 +141,7 @@ export default function EstudiantePagos() {
         valorCOP: Number(valor),
         metodo,
         referencia: referencia.trim() || null,
-        comprobanteUrl: isWompi ? null : comprobanteUrl, // For Wompi, send null
+        comprobanteUrl: isWompi ? null : comprobanteUrl, // Para Wompi, enviamos null (pero ya estamos en el else)
       });
       toast({ title: t('lms.payment.registered'), description: t('lms.payment.pendingApproval') });
       setAbierto(false);

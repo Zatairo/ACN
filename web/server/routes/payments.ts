@@ -5,6 +5,7 @@ import { validate } from '../lib/validate'
 import { AppError } from '../lib/errors'
 import { requireAuth, requireRole } from '../middleware/auth'
 import { audit } from '../lib/audit'
+import { wompiService } from "../lib/wompi";
 
 const router = Router()
 router.use(requireAuth)
@@ -136,5 +137,150 @@ router.post('/wompi/webhook', async (req, res) => {
   console.log('Webhook de Wompi recibido:', req.body)
   res.json({ received: true })
 })
+
+export default router
+// POST /api/payments/wompi/create-transaction — Crea una transacción en Wompi y devuelve el ID
+router.post('/wompi/create-transaction', requireRole('STUDENT'), async (req, res) => {
+  const schema = z.object({
+    concepto: z.string().min(3, 'Concepto requerido'),
+    valorCOP: z.coerce.number().int().min(1),
+    metodo: z.enum(['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE']), // Note: we'll correct the enum below
+  });
+
+  // Correct the enum to match the actual methods
+  const methodSchema = z.enum(['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE']);
+  const parsed = metodo.safeParse(req.body.metodo);
+  if (!parsed.success) {
+    throw new AppError(400, 'METODO_INVALIDO', 'Método de pago Wompi no válido');
+  }
+
+  const data = {
+    concepto: req.body.concepto,
+    valorCOP: req.body.valorCOP,
+    metodo: parsed.data,
+  };
+
+  const { concepto, valorCOP, metodo } = data;
+
+  // Obtener el email del usuario autenticado
+  const student = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!student) {
+    throw new AppError(404, 'NOT_FOUND', 'Estudiante no encontrado');
+  }
+  const email = student.email;
+  if (!email) {
+    throw new AppError(400, 'EMAIL_REQUIRED', 'El estudiante no tiene email asociado');
+  }
+
+  // Mapear nuestro método a los tipos de pago de Wompi
+  let wompiPaymentMethodType: 'CARD' | 'NEQUI' | 'PSE';
+  switch (metodo) {
+    case 'WOMPI_CARD':
+      wompiPaymentMethodType = 'CARD';
+      break;
+    case 'WOMPI_NEQUI':
+      wompiPaymentMethodType = 'NEQUI';
+      break;
+    case 'WOMPI_PSE':
+      wompiPaymentMethodType = 'PSE';
+      break;
+    default:
+      throw new AppError(400, 'METODO_NO_SOPORTADO', `Método ${metodo} no soportado para Wompi`);
+  }
+
+  // Generar una referencia única (usamos el concepto y un timestamp)
+  const referencia = `${concepto}-${Date.now()}`;
+
+  try {
+    const wompiResponse = await wompiService.createTransaction({
+      amountInCents: valorCOP * 100, // Wompi expects cents
+      currency: 'COP',
+      reference: referencia,
+      customerEmail: email,
+      paymentMethodType: wompiPaymentMethodType,
+    });
+
+    // Devolver el ID de la transacción de Wompi y cualquier otro dato necesario
+    res.json({
+      data: {
+        transaccionIdWompi: wompiResponse.id,
+        // Si necesitamos redirigir al usuario a una URL de Wompi, la incluimos
+        // Para tarjetas, podemos usar el widget y no necesitamos redirect
+        // Para PSE y Nequi, podemos proporcionar un URL de redirección
+        redirectUrl: wompiResponse.redirect_url,
+      },
+    });
+  } catch (error) {
+    console.error('Error al crear transacción en Wompi:', error);
+    if (error instanceof Error) {
+      throw new AppError(500, 'WOMPI_ERROR', error.message);
+    }
+    throw new AppError(500, 'WOMPI_ERROR', 'Error al comunicarse con Wompi');
+  }
+
+// POST /api/payments/wompi/create-transaction — Fase 3: crea transacción Wompi y devuelve el transaccionIdWompi
+router.post('/wompi/create-transaction', requireRole('STUDENT', 'ADMIN'), async (req, res) => {
+  // Validamos el método de pago (solo Wompi)
+  const metodo = req.body.metodo;
+  if (!['WOMPI_CARD', 'WOMPI_NEQUI', 'WOMPI_PSE'].includes(metodo)) {
+    throw new AppError(400, 'METODO_INVALIDO', 'Método de pago Wompi no válido');
+  }
+
+  const { concepto, valorCOP } = req.body;
+  if (!concepto || !valorCOP) {
+    throw new AppError(400, 'CAMPO_FALTANTE', 'Concepto y valor son requeridos');
+  }
+
+  // Obtener el email del usuario autenticado
+  const student = await prisma.user.findUnique({ where: { id: req.user!.id } });
+  if (!student) {
+    throw new AppError(404, 'NOT_FOUND', 'Estudiante no encontrado');
+  }
+  const email = student.email;
+  if (!email) {
+    throw new AppError(400, 'EMAIL_REQUIRED', 'El estudiante no tiene email asociado');
+  }
+
+  // Mapear nuestro método a los tipos de pago de Wompi
+  let wompiPaymentMethodType: 'CARD' | 'NEQUI' | 'PSE';
+  switch (metodo) {
+    case 'WOMPI_CARD':
+      wompiPaymentMethodType = 'CARD';
+      break;
+    case 'WOMPI_NEQUI':
+      wompiPaymentMethodType = 'NEQUI';
+      break;
+    case 'WOMPI_PSE':
+      wompiPaymentMethodType = 'PSE';
+      break;
+  }
+
+  // Generar una referencia única
+  const referencia = `${concepto}-${Date.now()}`;
+
+  try {
+    const wompiResponse = await wompiService.createTransaction({
+      amountInCents: valorCOP * 100, // Wompi expects cents
+      currency: 'COP',
+      reference: referencia,
+      customerEmail: email,
+      paymentMethodType: wompiPaymentMethodType,
+    });
+
+    // Devolver el ID de la transacción de Wompi y cualquier otro dato necesario
+    res.json({
+      data: {
+        transaccionIdWompi: wompiResponse.id,
+        redirectUrl: wompiResponse.redirect_url,
+      },
+    });
+  } catch (error) {
+    console.error('Error al crear transacción en Wompi:', error);
+    if (error instanceof Error) {
+      throw new AppError(500, 'WOMPI_ERROR', error.message);
+    }
+    throw new AppError(500, 'WOMPI_ERROR', 'Error al comunicarse con Wompi');
+  }
+});
 
 export default router
