@@ -18,7 +18,6 @@ import {
 // consumido, registrar pago manual (subir comprobante Nequi/
 // Davivienda) e historial con estados.
 // ─────────────────────────────────────────────────────────────
-
 export default function EstudiantePagos() {
   const { t, lang } = useI18n();
   const { toast } = useToast();
@@ -34,6 +33,11 @@ export default function EstudiantePagos() {
   const [comprobanteNombre, setComprobanteNombre] = useState('');
   const [subiendo, setSubiendo] = useState(false);
   const [enviando, setEnviando] = useState(false);
+  const [isWompi, setIsWompi] = useState(false);
+
+  useEffect(() => {
+    setIsWompi(metodo.startsWith('WOMPI'));
+  }, [metodo]);
 
   const load = useCallback(async () => {
     try {
@@ -48,7 +52,7 @@ export default function EstudiantePagos() {
     } catch {
       setPayments([]);
     }
-  }, []);
+  }, [load]);
 
   useEffect(() => {
     load();
@@ -77,7 +81,8 @@ export default function EstudiantePagos() {
   };
 
   const registrarPago = async () => {
-    if (!concepto.trim() || !Number(valor) || !comprobanteUrl) {
+    // For Wompi, we don't require comprobanteUrl
+    if (!concepto.trim() || !Number(valor) || (!isWompi && !comprobanteUrl)) {
       toast({ title: t('lms.error'), description: t('lms.payment.requiredFields'), variant: 'destructive' });
       return;
     }
@@ -89,7 +94,7 @@ export default function EstudiantePagos() {
         valorCOP: Number(valor),
         metodo,
         referencia: referencia.trim() || null,
-        comprobanteUrl,
+        comprobanteUrl: isWompi ? null : comprobanteUrl, // For Wompi, send null
       });
       toast({ title: t('lms.payment.registered'), description: t('lms.payment.pendingApproval') });
       setAbierto(false);
@@ -180,7 +185,7 @@ export default function EstudiantePagos() {
 
       {/* Diálogo de registro de pago */}
       <Dialog open={abierto} onOpenChange={(o) => !o && setAbierto(false)}>
-        <DialogContent>
+        <DialogContent className="w-full max-w-md">
           <DialogHeader>
             <DialogTitle>{t('lms.payment.register')}</DialogTitle>
             <DialogDescription>{t('lms.payment.registerDesc')}</DialogDescription>
@@ -203,6 +208,9 @@ export default function EstudiantePagos() {
                     <SelectItem value="NEQUI">Nequi</SelectItem>
                     <SelectItem value="DAVIVIENDA">Davivienda</SelectItem>
                     <SelectItem value="EFECTIVO">{t('lms.payment.cash')}</SelectItem>
+                    <SelectItem value="WOMPI_CARD">Wompi · Tarjeta</SelectItem>
+                    <SelectItem value="WOMPI_NEQUI">Wompi · Nequi</SelectItem>
+                    <SelectItem value="WOMPI_PSE">Wompi · PSE</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -212,12 +220,12 @@ export default function EstudiantePagos() {
               <Input value={referencia} onChange={(e) => setReferencia(e.target.value)} placeholder={t('lms.payment.referencePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>{t('lms.payment.receipt')} *</Label>
+              <Label>{isWompi ? t('lms.payment.wompiNoReceipt') : t('lms.payment.receipt')} *{!isWompi ? '*' : ''}</Label>
               <div className="rounded-lg border-2 border-dashed border-slate-200 p-4 text-center">
                 <input type="file" id="comprobante" className="hidden" onChange={subirComprobante} accept=".png,.jpg,.jpeg,.pdf" />
                 <label htmlFor="comprobante" className="inline-flex items-center gap-1.5 text-xs font-semibold bg-slate-100 text-slate-700 px-4 py-2 rounded-lg cursor-pointer hover:bg-slate-200">
                   {subiendo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                  {t('lms.payment.uploadReceipt')}
+                  {isWompi ? t('lms.payment.wompiUploadPlaceholder') : t('lms.payment.uploadReceipt')}
                 </label>
                 {comprobanteNombre && <p className="text-xs text-green-600 mt-2">{comprobanteNombre}</p>}
               </div>

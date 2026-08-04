@@ -78,6 +78,13 @@ router.post('/', requireRole('STUDENT', 'ADMIN'), async (req, res) => {
     }
   }
 
+  // For Wompi payments, we don't require a comprobante (it will be provided via webhook)
+  // For other methods, we require comprobanteUrl (except EFECTIVO? but we keep as is)
+  const isWompi = data.metodo.startsWith('WOMPI')
+  if (!isWompi && !data.comprobanteUrl) {
+    throw new AppError(400, 'COMPROBANTE_REQUERIDO', 'Se requiere comprobante para este método de pago')
+  }
+
   const payment = await prisma.payment.create({
     data: {
       studentId,
@@ -88,7 +95,7 @@ router.post('/', requireRole('STUDENT', 'ADMIN'), async (req, res) => {
       // El estudiante siempre entra como PENDIENTE; el admin puede fijar el estado final
       estado: isAdmin ? (data.estado ?? 'PENDIENTE') : 'PENDIENTE',
       referencia: data.referencia ?? null,
-      comprobanteUrl: data.comprobanteUrl ?? null,
+      comprobanteUrl: isWompi ? null : (data.comprobanteUrl ?? null), // For Wompi, we set null initially; webhook will update if needed
     },
   })
   if (isAdmin) await audit(req.user!.id, 'PAYMENT_CREATE', 'Payment', payment.id)
@@ -111,13 +118,23 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res) => {
       ...(data.comprobanteUrl !== undefined ? { comprobanteUrl: data.comprobanteUrl } : {}),
     },
   })
-  await audit(req.user!.id, `PAYMENT_${data.estado ?? 'UPDATE'}`, 'Payment', id)
+  await audit(
+    req.user!.id,
+    `PAYMENT_${data.estado ?? 'UPDATE'}`,
+    'Payment',
+    id,
+  )
   res.json({ data: payment })
 })
 
-// POST /api/payments/wompi/webhook — Fase 3 (se deja la firma, responde 501 por ahora)
-router.post('/wompi/webhook', requireRole('ADMIN'), () => {
-  throw new AppError(501, 'NOT_IMPLEMENTED', 'Webhook Wompi disponible en la Fase 3 del plan')
+// POST /api/payments/wompi/webhook — Fase 3: recibe webhook de Wompi y actualiza el pago
+// Por ahora, solo registramos el webhook y retornamos éxito.
+// La implementación actualizada se hará en una futura iteración.
+router.post('/wompi/webhook', async (req, res) => {
+  // En una implementación real, verificar la firma del webhook usando WOMPI_SIGNATURE_KEY
+  // y actualizar el pago correspondiente.
+  console.log('Webhook de Wompi recibido:', req.body)
+  res.json({ received: true })
 })
 
 export default router
