@@ -39,7 +39,7 @@ export default function Home() {
     setGenerating(true);
     try {
       const result = await db.integrations.Core.InvokeLLM({
-        prompt: `You are an expert English teacher on US-Learn. Generate a COMPLETE personalized English lesson with 10 interactive activities for this student.
+        prompt: `You are an expert English teacher on ACN Institute. Generate a COMPLETE personalized English lesson with 10 interactive activities for this student.
 
 STUDENT PROFILE (RAG — permanent system context for all content):
 - Name: ${profile.full_name}

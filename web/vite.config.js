@@ -12,4 +12,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      // API del LMS (Express + SQLite + Prisma en web/server, puerto 4000)
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+      // Archivos subidos al servidor (comprobantes, entregas, materiales)
+      '/uploads': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

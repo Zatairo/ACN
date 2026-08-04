@@ -1,27 +1,30 @@
-﻿import { db } from '../api/base44Client';
-
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+﻿import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserPlus, Mail, Lock, Loader2 } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import AuthLayout from "@/components/AuthLayout";
-import GoogleIcon from "@/components/GoogleIcon";
 import { toast } from "@/components/ui/use-toast";
 import { useI18n } from "@/lib/i18n/index.jsx";
+import { authApi, setToken } from "@/api/lmsClient";
+
+// ─────────────────────────────────────────────────────────────
+// Register — registro real del LMS (F2.A2): crea la cuenta en el
+// backend Express (POST /api/auth/register), guarda el JWT y
+// redirige al dashboard del estudiante.
+// ─────────────────────────────────────────────────────────────
 
 export default function Register() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showOtp, setShowOtp] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,103 +33,29 @@ export default function Register() {
       setError(t('auth.passwordMismatch'));
       return;
     }
+    if (password.length < 8) {
+      setError(t('auth.passwordMin'));
+      return;
+    }
     setLoading(true);
     try {
-      await db.auth.register({ email, password });
-      setShowOtp(true);
-    } catch (err) {
-      setError(err.message || t('auth.registrationFailed'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const result = await db.auth.verifyOtp({ email, otpCode });
-      if (result?.access_token) {
-        db.auth.setToken(result.access_token);
-      }
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || t('auth.invalidCode'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResend = async () => {
-    setError("");
-    try {
-      await db.auth.resendOtp(email);
-      toast({
-        title: t('auth.codeSent'),
-        description: t('auth.checkEmail'),
+      const { token, user } = await authApi.register({
+        nombre: nombre.trim(),
+        email: email.trim(),
+        password,
       });
+      setToken(token);
+      toast({
+        title: t('auth.welcomeBack'),
+        description: `${user.nombre} — ${user.email}`,
+      });
+      navigate(user.rol === 'STUDENT' ? '/estudiante' : '/login', { replace: true });
     } catch (err) {
       setError(err.message || t('auth.registrationFailed'));
+    } finally {
+      setLoading(false);
     }
   };
-
-  const handleGoogle = () => {
-    db.auth.loginWithProvider("google", "/");
-  };
-
-  if (showOtp) {
-    return (
-      <AuthLayout
-        icon={Mail}
-        title={t('auth.verifyEmail')}
-        subtitle={`${t('auth.weSentCode')} ${email}`}
-      >
-        {error && (
-          <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-            {error}
-          </div>
-        )}
-        <div className="flex justify-center mb-6">
-          <InputOTP
-            maxLength={6}
-            value={otpCode}
-            onChange={setOtpCode}
-            autoFocus
-            autoComplete="one-time-code"
-          >
-            <InputOTPGroup>
-              <InputOTPSlot index={0} />
-              <InputOTPSlot index={1} />
-              <InputOTPSlot index={2} />
-              <InputOTPSlot index={3} />
-              <InputOTPSlot index={4} />
-              <InputOTPSlot index={5} />
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
-        <Button
-          className="w-full h-12 font-medium"
-          onClick={handleVerify}
-          disabled={loading || otpCode.length < 6}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {t('auth.verifying')}
-            </>
-          ) : (
-            t('auth.verify')
-          )}
-        </Button>
-        <p className="text-center text-sm text-muted-foreground mt-4">
-          {t('auth.didntReceive')}{" "}
-          <button onClick={handleResend} className="text-primary font-medium hover:underline">
-            {t('auth.resend')}
-          </button>
-        </p>
-      </AuthLayout>
-    );
-  }
 
   return (
     <AuthLayout
@@ -142,24 +71,6 @@ export default function Register() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        {t('auth.continueGoogle')}
-      </Button>
-
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">{t('auth.or')}</span>
-        </div>
-      </div>
-
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
           {error}
@@ -168,6 +79,23 @@ export default function Register() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
+          <Label htmlFor="nombre">{t('auth.name')}</Label>
+          <div className="relative">
+            <UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
+            <Input
+              id="nombre"
+              type="text"
+              autoComplete="name"
+              autoFocus
+              placeholder={t('auth.namePlaceholder')}
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              className="pl-10 h-12"
+              required
+            />
+          </div>
+        </div>
+        <div className="space-y-2">
           <Label htmlFor="email">{t('auth.email')}</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -175,7 +103,6 @@ export default function Register() {
               id="email"
               type="email"
               autoComplete="email"
-              autoFocus
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -199,6 +126,7 @@ export default function Register() {
               required
             />
           </div>
+          <p className="text-xs text-muted-foreground">{t('auth.passwordHint')}</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="confirm">{t('auth.confirmPassword')}</Label>
@@ -230,5 +158,3 @@ export default function Register() {
     </AuthLayout>
   );
 }
-
-

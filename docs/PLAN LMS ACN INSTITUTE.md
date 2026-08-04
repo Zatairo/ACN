@@ -3,6 +3,7 @@
 > Versión: 1.0 · 2026-08-02 · Autor: Directora Ejecutiva (agente director)
 > Alcance: construcción del AULA VIRTUAL INTERNA (LMS) sobre la app de `web/`.
 > Restricción NO negociable: **NO se publica en producción** en Fases 1–4. La Fase 5 es SOLO planificación, sin fechas de ejecución.
+> Estado actual: **0 estudiantes activos** (reinicio de base de datos, 2026-08-02). Los 6 estudiantes de `Students 2025/` son **datos históricos de ejemplo** — se usan únicamente como seed/casos de prueba, NO como clientes activos ni objetivo de pruebas con personas reales.
 
 ---
 
@@ -109,7 +110,7 @@ Contrato REST `/api/*`. **Si se confirma la Vía B (Next.js 16),** cada endpoint
 |---|---|---|---|
 | Escribir `schema.prisma` completo con las 16 entidades de la tabla F1.C (relaciones, índices, enums) | webdev | Alta | F1.A3 |
 | Generar primera migración `prisma migrate dev --name init` y verificar `npm run lint` + `npm run build` | webdev | Alta | F1.E1 |
-| Crear seed (`web/prisma/seed.ts`): usuarios (1 admin/teacher = Andrea, 6 estudiantes), perfiles RAG con datos reales (Andrés, Milena, Jenifer, Luciana, Nico&Juanita, Gabriela), paquetes y matrículas actuales | webdev + didactica | Alta | F1.E2 |
+| Crear seed (`web/prisma/seed.ts`): usuarios (1 admin/teacher = Andrea, 6 estudiantes de ejemplo = históricos de `Students 2025/`, claramente marcados como `estado: INACTIVE` o tipo `DEMO`), perfiles RAG con datos reales (Andrés, Milena, Jenifer, Luciana, Nico&Juanita, Gabriela), paquetes (fuente: `Services- Andres.docx`) y matrículas DEMO de prueba. NO se crean matrículas activas reales porque no hay estudiantes | webdev + didactica | Alta | F1.E2 |
 | Implementar middleware de auth JWT + guardas por rol (`requireAuth`, `requireRole('ADMIN'|'TEACHER'|'STUDENT')`) | webdev | Alta | F1.A5 |
 | Implementar endpoints del módulo Auth (registro, login, me, reset) | webdev | Alta | F1.E4 |
 | Implementar endpoints de Usuarios, Perfiles RAG y Paquetes | webdev | Alta | F1.E4 |
@@ -240,16 +241,16 @@ Rutas propuestas: `/admin` (dashboard), `/admin/usuarios`, `/admin/cursos`, `/ad
 
 ---
 
-## FASE 4 — Pruebas internas y ajustes (con los 6 estudiantes actuales)
+## FASE 4 — Pruebas internas y ajustes (con cuentas DEMO, sin estudiantes activos)
 
-**Objetivo:** probar el LMS con datos y personas reales hasta declararlo "funcional y probado". Sin publicación: se prueba en localhost, con pantalla compartida en las clases y, si la directora lo autoriza, con túnel temporal desechable (ngrok/cloudflared) solo durante la sesión de prueba, sin dominio ni producción.
+**Objetivo:** probar el LMS a fondo con cuentas DEMO basadas en los 6 estudiantes históricos y con la directora como usuaria real, hasta declararlo "funcional y probado". Sin publicación: se prueba en localhost; si hay túnel temporal desechable (ngrok/cloudflared), solo durante sesiones de prueba y con aprobación de la directora. **Nota: al no haber estudiantes activos, NO hay pruebas con personas reales aún; cuando lleguen los primeros estudiantes reales se repite la validación de flujos con ellos (criterio adicional de salida, ver sección B).**
 
 ### Épica F4.A — Preparación del entorno de prueba
 
 | Tarea | Responsable | Prioridad | Depende de |
 |---|---|---|---|
 | Definir matriz de pruebas por rol y flujo (estudiante/profesor/admin × clase, tarea, práctica, pago) | soporte + webdev | Alta | F3 completa |
-| Preparar cuentas de prueba: 6 estudiantes + 1 profesora/admin con contraseñas temporales y datos reales del seed | webdev | Alta | F1.E3 |
+| Preparar cuentas de prueba: 6 estudiantes DEMO + 1 profesora/admin (Andrea) con contraseñas temporales a partir del seed (los 6 estudiantes NO son activos; son solo casos de prueba) | webdev | Alta | F1.E3 |
 | Preparar guía corta (1 página) para que la directora muestre el LMS a cada estudiante en clase | didactica + contenido | Media | F4.A1 |
 | (Opcional, con aprobación de la directora) Configurar túnel temporal desechable para 2 pruebas remotas; se cierra al terminar cada sesión | webdev | Baja | F4.A2 |
 
@@ -327,9 +328,9 @@ Rutas propuestas: `/admin` (dashboard), `/admin/usuarios`, `/admin/cursos`, `/ad
 
 ## B. Criterios de salida de la Fase 4 (para autorizar la Fase 5)
 
-1. **Cobertura:** los 6 estudiantes completaron al menos 2 ciclos completos en el LMS (clase vista → tarea entregada y calificada → práctica realizada → pago registrado) sin asistencia de la directora para navegar.
+1. **Cobertura:** los 6 estudiantes DEMO (históricos) completaron al menos 2 ciclos completos en el LMS (clase vista → tarea entregada y calificada → práctica realizada → pago registrado) sin asistencia de la directora para navegar. Además: cuando se matricule el primer estudiante real, se repite la validación de flujos con él antes de cualquier despliegue.
 2. **Calidad técnica:** cero errores críticos (bloqueantes) abiertos; los menores están en `ops/INCIDENCIAS.md` con responsable y fecha; `npm run lint` y `npm run build` pasan sin errores.
-3. **Roles:** los 3 roles (student/teacher/admin) operan en local con datos reales de los 6 estudiantes y permisos correctos.
+3. **Roles:** los 3 roles (student/teacher/admin) operan en local con datos del seed (6 estudiantes DEMO) y permisos correctos.
 4. **Conciliación financiera:** el reporte de ingresos del LMS coincide al 100% con la contabilidad manual actual (~$2.500.000 COP/mes, 6 estudiantes, 15 clases/semana).
 5. **Integraciones validadas:** 1 transacción Wompi sandbox completa; 1 reserva externa → `Session`; enlace de video visible y funcional en cada sesión; al menos 1 audio ElevenLabs en el flujo de tarea.
 6. **RAG operativo:** los 6 perfiles generan lecciones/actividades coherentes con nivel y propósito, validado por la directora.

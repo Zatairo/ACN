@@ -1,6 +1,4 @@
-﻿import { db } from '../api/base44Client';
-
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -8,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
-import GoogleIcon from "@/components/GoogleIcon";
 import { useI18n } from "@/lib/i18n/index.jsx";
+import { useAuth } from "@/lib/AuthContext";
+
+// Dashboard por rol tras el login real del LMS (F2)
+const DASHBOARD_BY_ROLE = { STUDENT: "/estudiante", TEACHER: "/profesor", ADMIN: "/admin" };
 
 export default function Login() {
   const { t } = useI18n();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,17 +25,14 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      await db.auth.loginViaEmailPassword(email, password);
-      window.location.href = "/";
+      const user = await login(email, password);
+      const dest = DASHBOARD_BY_ROLE[user.rol] || "/";
+      window.location.href = dest;
     } catch (err) {
       setError(err.message || t('auth.invalidCredentials'));
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogle = () => {
-    db.auth.loginWithProvider("google", "/");
   };
 
   return (
@@ -50,15 +49,6 @@ export default function Login() {
         </>
       }
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        {t('auth.continueGoogle')}
-      </Button>
-
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-border" />

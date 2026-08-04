@@ -2,7 +2,7 @@
 
 ## Project Context
 
-US-Learn: plataforma personalizada de inglés (React + Vite + Tailwind, shadcn/ui). Aplicación de código propiedad del usuario; mantener cambios enfocados y preservar las convenciones existentes.
+ACN Institute: plataforma personalizada de inglés (React + Vite + Tailwind, shadcn/ui). Aplicación de código propiedad del usuario; mantener cambios enfocados y preservar las convenciones existentes.
 
 La app funciona **sin backend ni plataforma externa**: `src/api/base44Client.js` implementa un backend local (auth, entidades, LLM e imágenes simulados) sobre `localStorage`, con la misma API que el SDK de Base44 (`db.auth.*`, `db.entities.*`, `db.integrations.Core.*`).
 

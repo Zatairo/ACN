@@ -24,7 +24,7 @@ const write = (key, value) => {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error('US-Learn storage error:', error);
+    console.error('ACN Institute storage error:', error);
   }
 };
 
@@ -95,8 +95,8 @@ const sendOtp = (email) => {
   const otp = read(LS.otp, {});
   otp[email] = code;
   write(LS.otp, otp);
-  console.warn(`[US-Learn demo] Código de verificación para ${email}: ${code}`);
-  window.alert(`[US-Learn demo]\n\nTu código de verificación es:\n\n${code}`);
+  console.warn(`[ACN Institute demo] Código de verificación para ${email}: ${code}`);
+  window.alert(`[ACN Institute demo]\n\nTu código de verificación es:\n\n${code}`);
 };
 
 const auth = {
@@ -180,7 +180,7 @@ const auth = {
   },
 
   async loginWithProvider(provider, redirectTo) {
-    const demoEmail = `demo.${provider || 'google'}@us-learn.app`;
+    const demoEmail = `demo.${provider || 'google'}@acn-institute.app`;
     const users = read(LS.users, []);
     let user = users.find((u) => u.email === demoEmail);
     if (!user) {
@@ -227,8 +227,8 @@ const auth = {
     const resets = read(LS.reset, {});
     resets[e] = token;
     write(LS.reset, resets);
-    console.warn(`[US-Learn demo] Token de restablecimiento para ${e}: ${token}`);
-    window.alert(`[US-Learn demo]\n\nTu token de restablecimiento es:\n\n${token}`);
+    console.warn(`[ACN Institute demo] Token de restablecimiento para ${e}: ${token}`);
+    window.alert(`[ACN Institute demo]\n\nTu token de restablecimiento es:\n\n${token}`);
   },
 
   async resetPassword({ resetToken, newPassword }) {
@@ -384,7 +384,7 @@ const svgPlaceholder = (seed, label) => {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450">` +
     `<rect width="800" height="450" fill="#${color}"/>` +
-    `<text x="400" y="225" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" dominant-baseline="middle">${label || 'US-Learn'}</text>` +
+    `<text x="400" y="225" font-family="Arial, sans-serif" font-size="36" fill="white" text-anchor="middle" dominant-baseline="middle">${label || 'ACN Institute'}</text>` +
     `</svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 };

@@ -4,6 +4,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { NotificationsProvider } from '@/lib/NotificationsContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -21,7 +22,36 @@ import MyLessons from '@/pages/MyLessons';
 import Dashboard from '@/pages/Dashboard';
 import FillInBlanks from '@/pages/FillInBlanks';
 import Profile from '@/pages/Profile';
-import AdminSettings from '@/pages/AdminSettings';
+
+// ── Zona LMS (Fase 2): guardas por rol + layout propio ──
+import LmsRoleRoute from '@/components/lms/LmsRoleRoute';
+import LmsLayout from '@/components/lms/LmsLayout';
+
+import EstudianteDashboard from '@/pages/lms/estudiante/Dashboard';
+import EstudianteClases from '@/pages/lms/estudiante/Clases';
+import EstudianteTareas from '@/pages/lms/estudiante/Tareas';
+import EstudianteTareaDetalle from '@/pages/lms/estudiante/TareaDetalle';
+import EstudiantePracticas from '@/pages/lms/estudiante/Practicas';
+import EstudiantePracticaDetalle from '@/pages/lms/estudiante/PracticaDetalle';
+import EstudiantePagos from '@/pages/lms/estudiante/Pagos';
+import EstudiantePerfil from '@/pages/lms/estudiante/Perfil';
+
+import ProfesorDashboard from '@/pages/lms/profesor/Dashboard';
+import ProfesorAgenda from '@/pages/lms/profesor/Agenda';
+import ProfesorEstudiantes from '@/pages/lms/profesor/Estudiantes';
+import ProfesorTareas from '@/pages/lms/profesor/Tareas';
+import ProfesorMateriales from '@/pages/lms/profesor/Materiales';
+
+import AdminDashboard from '@/pages/lms/admin/Dashboard';
+import AdminUsuarios from '@/pages/lms/admin/Usuarios';
+import AdminCursos from '@/pages/lms/admin/Cursos';
+import AdminCobros from '@/pages/lms/admin/Cobros';
+import AdminFinanzas from '@/pages/lms/admin/Finanzas';
+import AdminCrm from '@/pages/lms/admin/Crm';
+import AdminReportes from '@/pages/lms/admin/Reportes';
+import AdminAjustes from '@/pages/lms/admin/Ajustes';
+
+import Mensajes from '@/pages/lms/chat/Mensajes';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -53,6 +83,49 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* ── LMS · Estudiante ── */}
+      <Route element={<LmsRoleRoute rol="STUDENT" />}>
+        <Route element={<LmsLayout />}>
+          <Route path="/estudiante" element={<EstudianteDashboard />} />
+          <Route path="/estudiante/clases" element={<EstudianteClases />} />
+          <Route path="/estudiante/tareas" element={<EstudianteTareas />} />
+          <Route path="/estudiante/tareas/:id" element={<EstudianteTareaDetalle />} />
+          <Route path="/estudiante/practicas" element={<EstudiantePracticas />} />
+          <Route path="/estudiante/practicas/:id" element={<EstudiantePracticaDetalle />} />
+          <Route path="/estudiante/pagos" element={<EstudiantePagos />} />
+          <Route path="/estudiante/mensajes" element={<Mensajes />} />
+          <Route path="/estudiante/perfil" element={<EstudiantePerfil />} />
+        </Route>
+      </Route>
+
+      {/* ── LMS · Profesora ── */}
+      <Route element={<LmsRoleRoute rol="TEACHER" />}>
+        <Route element={<LmsLayout />}>
+          <Route path="/profesor" element={<ProfesorDashboard />} />
+          <Route path="/profesor/agenda" element={<ProfesorAgenda />} />
+          <Route path="/profesor/estudiantes" element={<ProfesorEstudiantes />} />
+          <Route path="/profesor/tareas" element={<ProfesorTareas />} />
+          <Route path="/profesor/materiales" element={<ProfesorMateriales />} />
+          <Route path="/profesor/mensajes" element={<Mensajes />} />
+        </Route>
+      </Route>
+
+      {/* ── LMS · Administradora ── */}
+      <Route element={<LmsRoleRoute rol="ADMIN" />}>
+        <Route element={<LmsLayout />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+          <Route path="/admin/cursos" element={<AdminCursos />} />
+          <Route path="/admin/cobros" element={<AdminCobros />} />
+          <Route path="/admin/finanzas" element={<AdminFinanzas />} />
+          <Route path="/admin/crm" element={<AdminCrm />} />
+          <Route path="/admin/reportes" element={<AdminReportes />} />
+          <Route path="/admin/ajustes" element={<AdminAjustes />} />
+        </Route>
+      </Route>
+
+      {/* ── Zona clásica (pública/protegida por base44 local) ── */}
       <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
         <Route path="/onboarding" element={<Onboarding />} />
         <Route element={<Layout />}>
@@ -64,7 +137,6 @@ const AuthenticatedApp = () => {
           <Route path="/fill-in-the-blanks" element={<FillInBlanks />} />
           <Route path="/word-search" element={<WordSearch />} />
           <Route path="/profile" element={<Profile />} />
-          <Route path="/admin" element={<AdminSettings />} />
         </Route>
       </Route>
       <Route path="*" element={<PageNotFound />} />
@@ -77,10 +149,12 @@ function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <ScrollToTop />
-          <AuthenticatedApp />
-        </Router>
+        <NotificationsProvider>
+          <Router>
+            <ScrollToTop />
+            <AuthenticatedApp />
+          </Router>
+        </NotificationsProvider>
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>

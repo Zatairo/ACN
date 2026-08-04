@@ -1,0 +1,523 @@
+// ─────────────────────────────────────────────────────────────
+// ACN Institute LMS — Esquema Prisma (Fase 1 del plan)
+// Fuente: docs/PLAN LMS ACN INSTITUTE.md (tabla F1.C)
+// Provider: SQLite (base en web/data/lms.db, fuera de git)
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ── Enums ──────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CEFRLevel {
+  A1
+  A2
+  B1
+  B2
+  C1
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  FINISHED
+  CANCELLED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum SessionCreator {
+  PROFESORA
+  ESTUDIANTE
+  SISTEMA
+}
+
+enum TaskType {
+  CONVERSACION
+  ESCRITURA
+  LECTURA
+  LISTENING
+  VOCABULARIO
+  EXAMEN
+}
+
+enum TaskStatus {
+  ASSIGNED
+  SUBMITTED
+  GRADED
+  EXPIRED
+}
+
+enum SubmissionStatus {
+  SUBMITTED
+  REVIEWED
+  RETURNED
+}
+
+enum PaymentMethod {
+  NEQUI
+  DAVIVIENDA
+  WOMPI_CARD
+  WOMPI_NEQUI
+  WOMPI_PSE
+  EFECTIVO
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+  VENCIDO
+}
+
+enum ActivityType {
+  FILL_BLANKS
+  WORD_SEARCH
+  QUIZ
+  LISTENING
+  GUIDED_CONVERSATION
+  ROLE_PLAY
+}
+
+enum ActivityStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ResourceType {
+  PDF
+  LINK
+  AUDIO
+  VIDEO
+  DOC
+}
+
+enum MessageType {
+  MENSAJE
+  RECORDATORIO
+  ANUNCIO
+}
+
+enum LeadChannel {
+  WEB
+  IG
+  TIKTOK
+  FOLLETO
+  REFERIDO
+}
+
+enum LeadStatus {
+  NUEVO
+  CONTACTADO
+  DIAGNOSTICO
+  OFERTA
+  CERRADO
+  PERDIDO
+}
+
+// ── Entidad 1: User ────────────────────────────────────────
+
+model User {
+  id               Int        @id @default(autoincrement())
+  email            String     @unique
+  passwordHash     String
+  nombre           String
+  telefonoWhatsApp String?
+  rol              Role
+  estado           UserStatus @default(ACTIVE)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  studentProfile    StudentProfile?
+  coursesTaught     Course[]         @relation("CourseTeacher")
+  sessionsTaught    Session[]        @relation("SessionTeacher")
+  enrollments       Enrollment[]     @relation("EnrollmentStudent")
+  tasksAssigned     Task[]           @relation("TaskTeacher")
+  tasksForStudent   Task[]           @relation("TaskStudent")
+  submissions       Submission[]
+  gradesEvaluated   Grade[]          @relation("GradeEvaluator")
+  payments          Payment[]        @relation("PaymentStudent")
+  resourcesUploaded Resource[]       @relation("ResourceUploader")
+  messagesSent      Message[]        @relation("MessageSender")
+  messagesReceived  Message[]        @relation("MessageRecipient")
+  auditLogs         AuditLog[]
+  practiceAttempts  PracticeAttempt[]
+
+  @@index([rol, estado])
+  @@index([estado])
+}
+
+// ── Entidad 2: StudentProfile (RAG) ────────────────────────
+
+model StudentProfile {
+  id                   Int        @id @default(autoincrement())
+  userId               Int        @unique
+  nivelMCER            CEFRLevel
+  proposito            String?
+  industria            String?
+  profesion            String?
+  intereses            String?
+  contextoProfesional  String?
+  objetivo             String?
+  horariosPreferidos   String?
+  notasDocente         String?
+  // JSON: intereses clave, vocabulario clave, restricciones — alimenta el motor RAG
+  datosRAG             Json?
+  updatedAt            DateTime   @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Entidad 3: Course ──────────────────────────────────────
+
+model Course {
+  id          Int          @id @default(autoincrement())
+  titulo      String
+  nivelMCER   CEFRLevel
+  descripcion String?
+  modalidad   String       @default("ZOOM") // ZOOM | GOOGLE_MEET
+  estado      CourseStatus @default(DRAFT)
+  teacherId   Int
+  paqueteId   Int?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  teacher     User         @relation("CourseTeacher", fields: [teacherId], references: [id])
+  paquete     Package?     @relation(fields: [paqueteId], references: [id])
+  modules     Module[]
+  enrollments Enrollment[]
+  tasks       Task[]
+  activities  PracticeActivity[]
+  resources   Resource[]
+
+  @@index([teacherId])
+  @@index([paqueteId])
+  @@index([estado])
+}
+
+// ── Entidad 4: Module ──────────────────────────────────────
+
+model Module {
+  id          Int     @id @default(autoincrement())
+  courseId    Int
+  orden       Int
+  titulo      String
+  descripcion String?
+  estado      String  @default("ACTIVE")
+
+  course    Course     @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  resources Resource[]
+
+  @@index([courseId])
+}
+
+// ── Entidad 5: Enrollment ──────────────────────────────────
+
+model Enrollment {
+  id                  Int              @id @default(autoincrement())
+  studentId           Int
+  courseId            Int
+  paqueteId           Int?
+  fechaInicio         DateTime
+  fechaFin            DateTime?
+  sesionesContratadas Int
+  sesionesUsadas      Int              @default(0)
+  estado              EnrollmentStatus @default(ACTIVE)
+  precioCOP           Int
+  // true = matrícula DEMO de prueba (seed histórico); nunca una matrícula real
+  esDemo              Boolean          @default(false)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  student  User      @relation("EnrollmentStudent", fields: [studentId], references: [id])
+  course   Course    @relation(fields: [courseId], references: [id])
+  paquete  Package?  @relation(fields: [paqueteId], references: [id])
+  sessions Session[]
+  payments Payment[]
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([estado])
+}
+
+// ── Entidad 6: Session ─────────────────────────────────────
+
+model Session {
+  id           Int            @id @default(autoincrement())
+  enrollmentId Int
+  teacherId    Int
+  fechaHora    DateTime
+  duracionMin  Int            @default(45)
+  estado       SessionStatus  @default(SCHEDULED)
+  enlaceVideo  String?
+  tema         String?
+  notasClase   String?
+  asistio      Boolean?
+  creadaPor    SessionCreator @default(PROFESORA)
+  // Solicitud de reprogramación del estudiante (F2): la profesora la aprueba
+  // aplicando reprogramacionFechaHora -> fechaHora y limpiando los campos.
+  reprogramacionSolicitada Boolean   @default(false)
+  reprogramacionFechaHora  DateTime?
+  reprogramacionNota       String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id])
+  teacher    User       @relation("SessionTeacher", fields: [teacherId], references: [id])
+
+  @@index([fechaHora])
+  @@index([enrollmentId])
+  @@index([estado])
+}
+
+// ── Entidad 7: Task ────────────────────────────────────────
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  courseId    Int
+  studentId   Int
+  teacherId   Int
+  tipo        TaskType
+  titulo      String
+  descripcion String?
+  nivelMCER   CEFRLevel
+  fechaLimite DateTime?
+  estado      TaskStatus @default(ASSIGNED)
+  audioUrl    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  course      Course   @relation(fields: [courseId], references: [id])
+  student     User     @relation("TaskStudent", fields: [studentId], references: [id])
+  teacher     User     @relation("TaskTeacher", fields: [teacherId], references: [id])
+  submissions Submission[]
+  grades      Grade[]
+  activities  PracticeActivity[]
+
+  @@index([studentId])
+  @@index([courseId])
+  @@index([estado])
+}
+
+// ── Entidad 8: Submission ──────────────────────────────────
+
+model Submission {
+  id             Int              @id @default(autoincrement())
+  taskId         Int
+  studentId      Int
+  contenidoTexto String?
+  archivoUrl     String?
+  audioUrl       String?
+  fechaEntrega   DateTime         @default(now())
+  estado         SubmissionStatus @default(SUBMITTED)
+
+  task    Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  student User @relation(fields: [studentId], references: [id])
+  grades  Grade[]
+
+  @@index([taskId])
+  @@index([studentId])
+}
+
+// ── Entidad 9: Grade ───────────────────────────────────────
+
+model Grade {
+  id               Int      @id @default(autoincrement())
+  taskId           Int
+  submissionId     Int
+  nota             Int // 0–100
+  rubricaJson      Json? // rúbrica MCER "can-do"
+  feedback         String?
+  feedbackAudioUrl String?
+  evaluadoPor      Int
+  fechaEvaluacion  DateTime @default(now())
+
+  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  evaluador  User @relation("GradeEvaluator", fields: [evaluadoPor], references: [id])
+
+  @@index([taskId])
+  @@index([submissionId])
+}
+
+// ── Entidad 10: Package ────────────────────────────────────
+
+model Package {
+  id            Int     @id @default(autoincrement())
+  nombre        String  @unique
+  sesiones      Int
+  vigenciaDias  Int
+  precioCOP     Int
+  precioPorClase Float
+
+  courses     Course[]
+  enrollments Enrollment[]
+}
+
+// ── Entidad 11: Payment ────────────────────────────────────
+
+model Payment {
+  id                 Int           @id @default(autoincrement())
+  studentId          Int
+  enrollmentId       Int?
+  concepto           String
+  valorCOP           Int
+  metodo             PaymentMethod
+  estado             PaymentStatus @default(PENDIENTE)
+  fecha              DateTime      @default(now())
+  referencia         String?
+  transaccionIdWompi String? // solo con Wompi (Fase 3)
+  comprobanteUrl     String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  student    User        @relation("PaymentStudent", fields: [studentId], references: [id])
+  enrollment Enrollment? @relation(fields: [enrollmentId], references: [id])
+
+  @@index([studentId])
+  @@index([enrollmentId])
+  @@index([estado])
+  @@index([fecha])
+}
+
+// ── Entidad 12: PracticeActivity ───────────────────────────
+
+model PracticeActivity {
+  id            Int            @id @default(autoincrement())
+  courseId      Int
+  taskId        Int?
+  tipo          ActivityType
+  contenidoJson Json
+  audioUrl      String?
+  nivelMCER     CEFRLevel
+  estado        ActivityStatus @default(PUBLISHED)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  task     Task?   @relation(fields: [taskId], references: [id])
+  attempts PracticeAttempt[]
+
+  @@index([courseId])
+  @@index([taskId])
+  @@index([nivelMCER])
+}
+
+// ── Entidad adicional: PracticeAttempt (intentos, plan F3.D5) ──
+
+model PracticeAttempt {
+  id             Int      @id @default(autoincrement())
+  activityId     Int
+  studentId      Int
+  puntaje        Int? // 0–100
+  respuestasJson Json?
+  createdAt      DateTime @default(now())
+
+  activity PracticeActivity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  student  User             @relation(fields: [studentId], references: [id])
+
+  @@index([activityId])
+  @@index([studentId])
+}
+
+// ── Entidad 13: Resource ───────────────────────────────────
+
+model Resource {
+  id         Int          @id @default(autoincrement())
+  courseId   Int
+  moduleId   Int?
+  tipo       ResourceType
+  titulo     String
+  url        String
+  uploaderId Int
+  createdAt  DateTime     @default(now())
+
+  course   Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module   Module? @relation(fields: [moduleId], references: [id])
+  uploader User    @relation("ResourceUploader", fields: [uploaderId], references: [id])
+
+  @@index([courseId])
+}
+
+// ── Entidad 14: Message ────────────────────────────────────
+
+model Message {
+  id             Int         @id @default(autoincrement())
+  remitenteId    Int
+  destinatarioId Int
+  tipo           MessageType @default(MENSAJE)
+  contenido      String
+  leido          Boolean     @default(false)
+  fecha          DateTime    @default(now())
+
+  remitente    User @relation("MessageSender", fields: [remitenteId], references: [id])
+  destinatario User @relation("MessageRecipient", fields: [destinatarioId], references: [id])
+
+  @@index([remitenteId, destinatarioId])
+  @@index([destinatarioId])
+}
+
+// ── Entidad 15: Lead (CRM) ─────────────────────────────────
+
+model Lead {
+  id               Int        @id @default(autoincrement())
+  nombre           String
+  telefonoWhatsApp String?
+  canal            LeadChannel
+  estado           LeadStatus @default(NUEVO)
+  nivelEstimado    CEFRLevel?
+  notas            String?
+  fecha            DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([estado])
+  @@index([canal])
+}
+
+// ── Entidad 16: AuditLog ───────────────────────────────────
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  accion    String
+  entidad   String
+  entidadId String
+  fecha     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entidad])
+}

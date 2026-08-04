@@ -34,3 +34,14 @@ temp/
 dist/
 build/
 out/
+
+# LMS: base de datos local (SQLite) — web/data/lms.db
+web/data/
+*.db
+*.db-journal
+
+# API del LMS
+web/server/coverage/
+
+# Uploads del LMS (archivos subidos en runtime — datos de usuarios)
+web/server/uploads/

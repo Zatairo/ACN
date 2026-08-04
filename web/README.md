@@ -1,6 +1,6 @@
-# US-Learn · Plataforma de Inglés
+# ACN Institute — Plataforma de Inglés
 
-App web (React + Vite + Tailwind) de US-Learn, plataforma personalizada de enseñanza de inglés para estudiantes de ACN Institute (Colombia). Los estudiantes crean su perfil (RAG), se nivelan por CEFR (A1–C1) y generan lecciones con 10 actividades interactivas personalizadas a su vida y profesión.
+App web (React + Vite + Tailwind) de ACN Institute, plataforma personalizada de enseñanza de inglés para estudiantes (Colombia). Los estudiantes crean su perfil (RAG), se nivelan por CEFR (A1–C1) y generan lecciones con 10 actividades interactivas personalizadas a su vida y profesión.
 
 ## ¿Cómo funciona?
 

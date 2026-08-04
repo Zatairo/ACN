@@ -2,6 +2,14 @@
 .env
 .env.*
 
+# Base de datos local del LMS (SQLite)
+data/
+*.db
+*.db-journal
+
+# Archivos subidos por usuarios (comprobantes, entregas, materiales) — F2
+server/uploads/
+
 # Logs
 /logs
 *.log

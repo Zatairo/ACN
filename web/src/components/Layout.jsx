@@ -3,10 +3,11 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 
 import { useEffect, useState, useCallback } from 'react';
-import { GraduationCap, Home as HomeIcon, Grid3x3, LogOut, BookOpen, BarChart3, FileText, User as UserIcon, Settings } from 'lucide-react';
+import { Home as HomeIcon, Grid3x3, LogOut, BookOpen, BarChart3, FileText, User as UserIcon, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n/index.jsx';
 import LangSelector from '@/components/LangSelector.jsx';
+import Isotype from '@/components/brand/Isotype';
 
 export default function Layout() {
   const [profile, setProfile] = useState(null);
@@ -56,12 +57,10 @@ export default function Layout() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#3C3B6E] to-[#B22234] flex items-center justify-center shadow-md">
-                <GraduationCap className="w-5 h-5 text-white" />
-              </div>
+              <Isotype />
               <div className="flex flex-col leading-none">
-                <span className="font-bold text-lg tracking-tight">
-                  <span className="text-[#3C3B6E]">US</span><span className="text-[#B22234]">-</span><span className="text-[#3C3B6E]">Learn</span>
+                <span className="font-bold text-lg tracking-tight text-brand-blue">
+                  ACN Institute
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-wider uppercase">{t('app.englishPlatform')}</span>
               </div>
