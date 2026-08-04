@@ -55,6 +55,10 @@
     "nuevo-lead": {
       "description": "Registra un nuevo lead en el proyecto. Uso: /nuevo-lead nombre, celular, propósito, nivel (opcional)",
       "template": "Registra un nuevo lead en ops/LEADS.md. Si no existe el archivo, créalo con formato tabla. El lead recibido es: $ARGUMENTS. Luego actualiza ops/ESTADO DEL PROYECTO.md incrementando el contador de leads."
+    },
+    "tablero": {
+      "description": "Muestra el tablero de trabajo (GitHub Issues) del proyecto. Uso: /tablero o /tablero hermes|opencode|humano",
+      "template": "Ejecuta `bash ops/tablero.sh $ARGUMENTS` (sin argumentos muestra todos los issues abiertos) y resume las tareas abiertas, su prioridad, dueño (hermes/opencode/humano) y fase. No modifiques nada."
     }
   }
 }
