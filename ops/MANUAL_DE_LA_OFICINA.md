@@ -62,7 +62,29 @@
 | Contrato de coordinación | `AGENTS.md` (sección "Coordinación multi-agente") |
 | Modelo por perfil | `~/.hermes/profiles/<perfil>/config.yaml` → `model.default` (global: `~/.hermes/config.yaml`) |
 
-> 2026-08-05: `orchestrator` usa SOUL "Agente Director" (formato <identity>/<agent_pool>/<custom_commands>, con comandos /reporte /estado /plan-dia /nuevo-lead). Pendiente: aplicar SOUL ACN-específicos al resto de perfiles.
+### SOULs (identidad por rol) — configurado 2026-08-05
+
+| Perfil | SOUL (instrucción) | Skill de rol |
+|---|---|---|
+| `orchestrator` | **Agente Director** (`<identity>/<context>/<agent_pool>/<custom_commands>`): /reporte /estado /plan-dia /nuevo-lead; delega vía kanban `acn` | `acn-oficina` |
+| `builder` | Implementador: features/bugfixes con evidencia (build/lint/typecheck/tests) | `acn-stack` + `acn-oficina` |
+| `qa` | Verificador: cobertura ≥80%, pirámide 70/20/10, smoke | `acn-qa` + `acn-oficina` |
+| `frontend` | Frontend/UX/rendimiento: Web Vitals LCP<2.5s, CLS<0.1, builds | `acn-stack` + `acn-oficina` |
+| `backend` | Backend/API/seguridad: OWASP L2, rate limit, Wompi | `acn-stack` + `acn-oficina` |
+| `docs` | Documentación: ARQUITECTURA/ESTADO/marca; .docx vía pandoc | `acn-docs` + `acn-oficina` |
+| `ops-watch` | Vigilancia de infra: gateway, cron, workers | `acn-ops-watch` + `acn-oficina` |
+| `acquisition` | Ventas: leads, ads, WhatsApp, LEADS.md | `acn-negocio` + `acn-oficina` |
+| `content` | Contenido y marca | `acn-negocio` + `acn-oficina` |
+| `success` | Éxito estudiantil: onboarding, retención, NPS día 7 | `acn-negocio` + `acn-oficina` |
+| `datafinance` | Finanzas: flujo de caja, Sheets ↔ LMS | `acn-negocio` + `acn-oficina` |
+| `ai` | IA: ElevenLabs (Bella), RAG all-MiniLM | `acn-negocio` + `acn-oficina` |
+| `payments` | Pagos: Wompi/Nequi/Davivienda, PENDIENTE >24h | `acn-negocio` + `acn-oficina` |
+| `growth` | Crecimiento: CAC<15k, LTV>3x | `acn-negocio` + `acn-oficina` |
+| `devops` | Infra y despliegue | `acn-negocio` + `acn-oficina` |
+
+- **Skills:** ubicadas en `~/.hermes/profiles/<perfil>/skills/<skill>/SKILL.md`. `acn-oficina` (global) está copiada en todos los perfiles. Verificar: `HERMES_HOME=~/.hermes/profiles/<perfil> hermes skills list`.
+- **Backups:** `SOUL.md.bak.roles` por perfil (versión genérica anterior).
+- **Tools/abilities:** el contrato de herramientas por worker está en `swarm.yaml` (campos `tools`, `modes`, `capabilities`); las habilidades procedimentales vienen de las skills.
 
 ---
 
