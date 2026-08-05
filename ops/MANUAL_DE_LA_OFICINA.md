@@ -62,7 +62,7 @@
 | Contrato de coordinación | `AGENTS.md` (sección "Coordinación multi-agente") |
 | Modelo por perfil | `~/.hermes/profiles/<perfil>/config.yaml` → `model.default` (global: `~/.hermes/config.yaml`) |
 
-> 2026-08-05: `orchestrator` ya tiene SOUL.md personalizado (ACN). Pendiente de aprobación: aplicar SOUL ACN-específicos al resto de perfiles.
+> 2026-08-05: `orchestrator` usa SOUL "Agente Director" (formato <identity>/<agent_pool>/<custom_commands>, con comandos /reporte /estado /plan-dia /nuevo-lead). Pendiente: aplicar SOUL ACN-específicos al resto de perfiles.
 
 ---
 
