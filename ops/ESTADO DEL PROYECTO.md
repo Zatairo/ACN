@@ -46,3 +46,21 @@ Se recomienda:
 
 ---
 *Este reporte fue generado automáticamente por el agente de auditoría (tarea t_af001846)*
+## 2026-08-05 02:44:52 - Corrección de vulnerabilidades de npm audit (tarea t_22177c37)
+
+- Ejecutado  en el proyecto web.
+- Encontradas 2 vulnerabilidades de alta severidad en `react-router` (versiones 6.0.0-7.17.0 y 7.12.0-8.2.0).
+- Se aplicaron los siguientes cambios en `web/package.json`:
+  - Actualizado `react-router-dom` a 7.18.2.
+  - Actualizado `react` y `react-dom` a 18.3.1.
+  - Manteniendo `react-quill` en ^2.0.0.
+  - Manteniendo `lodash` en 4.18.1.
+  - Eliminada la dependencia directa de `quill` (se cumple mediante peer dependency de `react-quill`).
+  - Añadido `overrides` para:
+      * `quill`: 2.0.2 (para evitar versiones vulnerables <1.3.8)
+      * `react-router`: 8.3.0 (para evitar las vulnerabilidades en las versiones mencionadas)
+- Eliminado `node_modules` y `package-lock.json` y reinstalado con `npm install --legacy-peer-deps`.
+- Después de la reinstalación, `npm audit` reporta 0 vulnerabilidades.
+
+Los cambios han sido confirmados y el proyecto está libre de vulnerabilidades de alta severidad reportadas por npm audit.
+

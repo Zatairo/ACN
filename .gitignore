@@ -45,3 +45,7 @@ web/server/coverage/
 
 # Uploads del LMS (archivos subidos en runtime — datos de usuarios)
 web/server/uploads/
+# backups locales
+*.bak
+*.backup
+*.bak.*
