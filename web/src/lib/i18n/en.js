@@ -367,6 +367,13 @@ export default {
   'lms.notif.title': 'Notifications',
   'lms.notif.nextClass': 'Your next class is tomorrow at {hora}. Get ready!',
 
+  // Estado de sesiones (usado en badges del dashboard)
+  'lms.session.estado.SCHEDULED': 'Scheduled',
+  'lms.session.estado.COMPLETED': 'Completed',
+  'lms.session.estado.CANCELLED': 'Cancelled',
+  'lms.session.estado.RESCHEDULED': 'Rescheduled',
+  'lms.session.estado.NO_SHOW': 'No show',
+
   // Chat
   'lms.messages.title': 'Messages',
   'lms.messages.subtitle': 'Chat with your ACN team in real time.',

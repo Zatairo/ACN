@@ -104,7 +104,7 @@ export default function AdminReportes() {
                   </div>
                   <div className="bg-white rounded-lg px-2 py-1.5">
                     <p className="text-slate-400 flex items-center gap-1"><Star className="w-3 h-3" /> {t('lms.admin.reportes.promedio')}</p>
-                    <p className="font-semibold text-slate-700">{p.promedioNota !== null ? `${p.promedioNota}/5` : '—'}</p>
+                    <p className="font-semibold text-slate-700">{p.promedioNota !== null ? `${p.promedioNota}/100` : '—'}</p>
                   </div>
                   <div className="bg-white rounded-lg px-2 py-1.5">
                     <p className="text-slate-400 flex items-center gap-1"><BarChart3 className="w-3 h-3" /> {t('lms.admin.reportes.practica')}</p>

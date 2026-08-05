@@ -220,7 +220,7 @@ export default function ProfesorTareas() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Nivel MCER</Label>
+                <Label>{t('lms.perfil.nivelMCER')}</Label>
                 <Select value={form.nivelMCER} onValueChange={(v) => setForm((f) => ({ ...f, nivelMCER: v }))}>
                   <SelectTrigger><SelectValue placeholder="B1" /></SelectTrigger>
                   <SelectContent>

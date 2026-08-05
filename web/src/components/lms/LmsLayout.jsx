@@ -51,7 +51,7 @@ const MENU = {
 
 const DASHBOARD_BY_ROLE = { STUDENT: '/estudiante', TEACHER: '/profesor', ADMIN: '/admin' };
 
-function SidebarItem({ item, active, badge }) {
+function SidebarItem({ item, active, badge, t }) {
   return (
     <Link
       to={item.to}
@@ -61,7 +61,7 @@ function SidebarItem({ item, active, badge }) {
       )}
     >
       <item.icon className="w-4 h-4 shrink-0" />
-      <span className="flex-1">{item.label}</span>
+      <span className="flex-1">{t(item.label)}</span>
       {badge > 0 && (
         <span className="min-w-[1.25rem] h-5 px-1 rounded-full bg-[#B22234] text-white text-[11px] font-bold flex items-center justify-center">
           {badge > 9 ? '9+' : badge}
@@ -115,7 +115,7 @@ export default function LmsLayout() {
 
       <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto">
         {items.map((item) => (
-          <SidebarItem key={item.to} item={item} active={isActive(item)} badge={item.to.includes('mensajes') ? totalNoLeidos : 0} />
+          <SidebarItem key={item.to} item={item} active={isActive(item)} badge={item.to.includes('mensajes') ? totalNoLeidos : 0} t={t} />
         ))}
       </nav>
 

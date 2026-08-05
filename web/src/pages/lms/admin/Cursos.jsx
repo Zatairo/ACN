@@ -239,7 +239,7 @@ function CursoForm({ dato, guardando, onGuardar, onCancelar }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label>Nivel MCER</Label>
+          <Label>{t('lms.perfil.nivelMCER')}</Label>
           <Select value={form.nivelMCER} onValueChange={(v) => setForm((f) => ({ ...f, nivelMCER: v }))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
