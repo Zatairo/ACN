@@ -86,6 +86,25 @@
 - **Backups:** `SOUL.md.bak.roles` por perfil (versión genérica anterior).
 - **Tools/abilities:** el contrato de herramientas por worker está en `swarm.yaml` (campos `tools`, `modes`, `capabilities`); las habilidades procedimentales vienen de las skills.
 
+### 3.1 Especialización por perfil (2026-08-05)
+
+Cada perfil pasó de **74 skills** a solo las de su rol, vía `skills.disabled` y `disabled_toolsets` en su `config.yaml`:
+
+| Perfil | Skills habilitadas (~) | Toolsets activos | Toolsets deshabilitados |
+|---|---|---|---|
+| `orchestrator` | 8 | terminal, file, web, skills, todo, memory, session_search, clarify, delegation, cronjob | bfl, browser, code_execution, computer_use, context_engine, homeassistant, image_gen, spotify, stt, tts, video, video_gen, vision, x_search, yuanbao |
+| `builder` / `backend` | 17 | terminal, file, web, browser, code_execution, skills, todo, memory, clarify | image_gen, tts, stt, computer_use, delegation, cronjob, vision, bfl, video... |
+| `frontend` | 16 | terminal, file, web, browser, code_execution, skills, todo, memory, clarify | idem dev |
+| `qa` | 9 | terminal, file, web, browser, code_execution, skills, todo, memory, clarify | — |
+| `docs` | 13 | terminal, file, web, skills, todo, memory, clarify | — |
+| `ops-watch` | 6 | terminal, file, web, skills, todo, memory, session_search, cronjob, clarify | — |
+| `content` / `acquisition` / `success` / `growth` | 8–11 | web, file, skills, todo, memory, clarify | — |
+| `ai` | 11 | terminal, file, web, skills, todo, memory, clarify | — |
+| `datafinance` / `payments` | 7 | web, file (+ terminal en payments), skills, todo, memory, clarify | — |
+
+- **Efecto:** cada agente solo "sabe" su especialidad. `content` no programa, `builder` no hace marketing, `ops-watch` solo vigila.
+- **Reaplicar:** editar `skills.disabled` / `disabled_toolsets` en el config del perfil (backups `config.yaml.bak.skills`).
+
 ---
 
 ## 4. Operar el día a día (3 pasos)
@@ -138,23 +157,32 @@ tmux attach -t swarm-orchestrator    # salir: Ctrl+B, D
 
 ---
 
-## 5.5 Telegram (1 bot + grupos)
+## 5.5 Telegram (1 bot + enrutamiento por grupo → agente)
 
-Un solo bot `@contableiz_bot` sirve todos los reportes. Los grupos son los "canales":
-- **ACN-Tecnico** (`-5312435696`): Build-24x7, frontend, backend, qa, docs
-- **ACN-Negocio** (`-5569743893`): ads, content, success, growth, ops, ai, rag, finance
-- **ACN-Oficina** (`-5474014250`): reservado para resúmenes del orquestador
-- El bot NO responde en grupos por defecto (modo privacidad). Para que lea mensajes de grupo: BotFather → `/setprivacy` → **Disable**. Para darle órdenes hoy: **DM** o @mención.
-- Token en `~/.hermes/.env` (`TELEGRAM_BOT_TOKEN`). Cambiar deliver: `hermes cron edit <job_id> --deliver telegram:<chat_id>`.
-- **Dar órdenes al orquestador:** escribe al bot por **DM** (o @mención en `ACN-Oficina`). El bot actúa como **coordinador**: divide tu orden, delega vía kanban `acn` / swarm y responde con reporte claro (OBJETIVO / QUÉ HICE / RESULTADO / SIGUIENTE PASO). Config: `platforms.telegram.channel_prompts.<chat_id>` en `~/.hermes/config.yaml` (recarga en caliente).
-- **Formato de reporte (todos los agentes cron):** cada job responde con `1. RESUMEN · 2. ACCIONES · 3. RESULTADO · 4. SIGUIENTE PASO`, en español y sin logs extensos. Añadido a los 13 prompts.
+Un solo bot `@contableiz_bot` sirve todos los canales, pero **cada grupo es atendido por su propio agente** (perfil distinto: SOUL, skills y tools propios). Se usa `gateway.multiplex_profiles: true` + `gateway.profile_routes` en `~/.hermes/config.yaml`.
+
+| Grupo / canal | chat_id | Agente que responde | Rol |
+|---|---|---|---|
+| **ACN-Oficina** | `-5474014250` | `orchestrator` | Agente Director: coordina, delega al swarm, reporta |
+| **ACN-Tecnico** | `-5312435696` | `builder` | Tech Lead: frontend/backend/qa/devops, reportes técnicos |
+| **ACN-Negocio** | `-5569743893` | `content` | Lead de Negocio: marketing, ventas, adquisición |
+| **DM del coordinador** | `816320302` | `orchestrator` | Control privado: ordenas y él reparte |
+
+- **Tú solo hablas con los "líderes" de grupo** (o al orquestador por DM). No asignas tareas individuales a frontend/backend/etc.: el orquestador las reparte vía kanban `acn` / swarm.
+- **Canal base por agente** (`platforms.telegram.home_channel` en el config de cada perfil): sus crones y notificaciones se entregan a su grupo.
+- Token en `~/.hermes/.env` (`TELEGRAM_BOT_TOKEN`). Cambiar deliver de un job: `hermes cron edit <job_id> --deliver telegram:<chat_id>`.
+- **Perfiles secundarios sin plataformas propias**: para que el multiplex no intente conectar bots duplicados, en el `config.yaml` de cada perfil ACN están `platforms.telegram.whatsapp.etc.enabled: false` (+ `api_server.enabled: false`) y en su `.env` `TELEGRAM_ENABLED=false`/`WHATSAPP_ENABLED=false`. Solo el perfil `default` posee el bot.
+- **Formato de reporte (todos los agentes):** `1. RESUMEN · 2. ACCIONES · 3. RESULTADO · 4. SIGUIENTE PASO`, en español y sin logs extensos.
+- **Reiniciar gateway tras tocar rutas:** `sudo systemctl restart hermes-gateway`.
 
 ---
 
 ## 6. Estado de referencia (2026-08-05)
 
-- **Workers tmux vivos:** orchestrator, builder, qa, frontend, backend, docs
-- **Activos (cron):** ACN-Build-24x7, acn_frontend, acn_backend, acn_qa, acn_docs
+- **Arquitectura:** 1 bot `@contableiz_bot` + `multiplex_profiles` + `profile_routes`. ACN-Oficina→orchestrator, ACN-Tecnico→builder, ACN-Negocio→content, DM→orchestrator. Verificado: cada grupo responde con su agente (2026-08-05).
+- **Especialización:** los 15 perfiles ACN con `skills.disabled` + `disabled_toolsets` (8–23 skills cada uno); perfiles secundarios sin plataformas propias.
+- **Cron:** `ops-watch-health` (cada 5 min) anclado a `nvidia/nemotron-3-nano-30b-a3b:free`.
+- **Activos (cron):** ACN-Build-24x7, acn_frontend, acn_backend, acn_qa, acn_docs, ops-watch-health
 - **Pausados (cron):** acn_ads, acn_content, acn_success, acn_growth, acn_ops, acn_ai, acn_rag, acn_finance
 - **Board kanban:** `acn` (vinculado al repo ACN, workdir `/home/soporte/proyectos/ACN`)
-- **Modelos (todo `:free`, $0):** orchestrator → `nvidia/nemotron-3-ultra-550b-a55b:free` · builder/backend → `poolside/laguna-s-2.1:free` · qa → `openai/gpt-oss-20b:free` · frontend → `poolside/laguna-xs-2.1:free` · docs → `google/gemma-4-26b-a4b-it:free`. Los 6 créditos de OpenRouter quedan como reserva: **no gastar.**
+- **Modelos (todo `:free`, $0):** orchestrator → `nvidia/nemotron-3-ultra-550b-a55b:free` · builder/backend → `poolside/laguna-s-2.1:free` · qa → `openai/gpt-oss-20b:free` · frontend → `poolside/laguna-xs-2.1:free` · docs → `google/gemma-4-26b-a4b-it:free` · ops-watch → `nvidia/nemotron-3-nano-30b-a3b:free`. Los 6 créditos de OpenRouter quedan como reserva: **no gastar.**
