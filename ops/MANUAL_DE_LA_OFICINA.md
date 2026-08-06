@@ -1,7 +1,7 @@
 # MANUAL DE LA OFICINA — ACN Institute
 
 > Guía práctica para operar la "oficina" de agentes autónomos de ACN.
-> Servidor: 192.168.1.56 | Workspace: http://192.168.1.56:3100 | Repo: /home/soporte/proyectos/ACN
+> Servidor: 192.168.110.38 (IP dinámica/rebota) | Workspace: http://192.168.110.38:3100 | Repo: /home/soporte/proyectos/ACN
 
 ---
 
@@ -13,13 +13,15 @@
 | Forma | Qué es | Quién la usa |
 |---|---|---|
 | **Por horario (cron)** | Los agentes trabajan solos a su hora, sin que tú hagas nada. | 12 jobs "acn_*" + ACN-Build-24x7 |
-| **Bajo demanda (kanban/swarm)** | Le das un objetivo y el **orquestador** divide, delega a los especialistas, y cada uno trabaja. | Perfiles del board `acn` + workers tmux |
+| **Bajo demanda (kanban/swarm)** | Le das un objetivo y el **orquestador** divide, delega a los especialistas, y el **dispatcher** los ejecuta. | Perfiles del board `acn` + dispatcher kanban |
 
 ---
 
 ## 2. Agentes en trabajo activo
 
-### 2.1 Workers bajo demanda (6, tmux vivos)
+### 2.1 Especialistas bajo demanda (kanban dispatch)
+
+> Ya no se usan sesiones `tmux` (se eliminaron tras el reboot 2026-08-05). Los especialistas se ejecutan bajo demanda cuando el **dispatcher kanban** lanza la tarjeta del board `acn` con el perfil correspondiente.
 
 | Worker | Rol | Perfil | Modelo (`:free`, $0) |
 |---|---|---|---|
@@ -58,7 +60,7 @@
 |---|---|
 | Cron jobs (13) | `hermes cron edit <nombre>` (en el servidor, usuario `soporte`) |
 | Perfil (identidad del agente) | `~/.hermes/profiles/<perfil>/SOUL.md` |
-| Worker swarm (tmux) | `hermes-workspace/swarm.yaml` (campo `mission`, `role`, `model`) |
+| Swarm (misión/tareas) | Board `acn` + `hermes kanban swarm`/`dispatch` (perfiles en `~/.hermes/profiles/`) |
 | Contrato de coordinación | `AGENTS.md` (sección "Coordinación multi-agente") |
 | Modelo por perfil | `~/.hermes/profiles/<perfil>/config.yaml` → `model.default` (global: `~/.hermes/config.yaml`) |
 
@@ -137,9 +139,11 @@ hermes kanban --board acn swarm "objetivo" \
   --worker builder:Implementa \
   --verifier qa --synthesizer orchestrator
 
-# Ver workers tmux
-tmux ls
-tmux attach -t swarm-orchestrator    # salir: Ctrl+B, D
+# Ejecutar la cola de trabajos (dispatcher: reclama, promueve, spawn a los agentes)
+hermes kanban --board acn dispatch
+
+# Ver estado de los agentes/workers vivos
+systemctl status hermes-gateway
 ```
 
 ---
@@ -152,7 +156,7 @@ tmux attach -t swarm-orchestrator    # salir: Ctrl+B, D
 | `Ready for Xh with no worker` | Tarea asignada a un perfil que no existe | Reasignar: `hermes kanban --board acn reassign <id> <perfil-real>` |
 | Worker swarm sin perfil (km-agent, reviewer, etc.) | Perfil no creado → cae a `default` | Crear el perfil o quitar el worker |
 | `Delivery failed ... deliver=telegram` | El aviso a Telegram no resuelve el destino | Revisar gateway de Telegram |
-| "Muchos chats" en el Workspace | Son los workers tmux vivos (es normal) | No es desorden |
+| "Muchos chats" en el Workspace | Sesiones activas de agentes/Telegram (normal) | No es desorden |
 | `max_concurrent_sessions: 3` | Límite de sesiones en paralelo (a propósito) | No tocar |
 
 ---
