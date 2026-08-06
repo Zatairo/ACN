@@ -181,6 +181,28 @@ Un solo bot `@contableiz_bot` sirve todos los canales, pero **cada grupo es aten
 
 ---
 
+
+## 5.6 WhatsApp (1 bridge + 3 agentes de finanzas, aparte de ACN)
+
+Los grupos de finanzas de WhatsApp son un **departamento aparte de la oficina ACN**:
+cada grupo tiene su propio agente (perfil distinto: SOUL y skills propios). Se usa el mismo `gateway.multiplex_profiles: true` + `gateway.profile_routes` en `~/.hermes/config.yaml`, con `platform: whatsapp` y el JID del grupo como `chat_id`.
+
+| Grupo de WhatsApp | JID | Agente que responde | Rol |
+|---|---|---|---|
+| **FINANZAS PERSONALES** | `120363426559924341@g.us` | `fp_personal` | Finanzas personales de Esnaider (presupuesto, ahorro, gastos) |
+| **Finanzas** | `120363426158712224@g.us` | `fp_hogar` | Finanzas del hogar compartidas (Andrea y Esnaider) |
+| **Andrea Finanzas** | `120363429174326751@g.us` | `fp_andrea` | Asistente financiero personal de Andrea |
+
+- **Perfiles creados 2026-08-06:** `~/.hermes/profiles/fp_personal`, `fp_hogar`, `fp_andrea` (config.yaml clonada de un perfil base de la oficina + `SOUL.md` propio en español por rol).
+- **Modelo (cloud libre, $0):** cada perfil usa `provider: openrouter` + `default: nvidia/nemotron-3-nano-30b-a3b:free`. El servidor (i5-5200U, 8 GiB RAM, sin GPU) **no da para inferencia local en tiempo real** (ollama/qwen2.5:7b tardaba ~7 min por mensaje).
+- **Contexto:** `model.context_length: 65536` (Hermes exige min 64k y el modelo se reporta en 32k). Sin esto falla con "below the minimum 64,000".
+- **API key OpenRouter** en el `.env` de cada perfil fp_* (`OPENROUTER_API_KEY=...`), igual que en `default`.
+- **Permisos WhatsApp:** los 3 grupos siguen en el `group_allow_from` del perfil `default` (dueño del bridge `whatsapp/session`). Con `profile_routes` el mensaje llega al perfil correcto.
+- **Solo una sesión WhatsApp** (un solo bridge, port 3000); los perfiles secundarios NO conectan su propio bridge (`WHATSAPP_ENABLED=false` en su `.env`).
+- **Reiniciar gateway tras tocar rutas/modelos:** `sudo systemctl restart hermes-gateway`.
+- Verificado 2026-08-06: cada grupo responde con su agente (fp_personal, fp_hogar, fp_andrea).
+
+---
 ## 6. Estado de referencia (2026-08-05)
 
 - **Arquitectura:** 1 bot `@contableiz_bot` + `multiplex_profiles` + `profile_routes`. ACN-Oficina→orchestrator, ACN-Tecnico→builder, ACN-Negocio→content, DM→orchestrator. Verificado: cada grupo responde con su agente (2026-08-05).
